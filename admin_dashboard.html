@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERP - Admin Dashboard</title>
+    <link rel="stylesheet" href="admin_dashboard.css">
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, addDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCH2BYhLITb-RrzosdVmJfl7H1TUyqG_To",
+            authDomain: "uvp-foundation-e5ece.firebaseapp.com",
+            projectId: "uvp-foundation-e5ece",
+            storageBucket: "uvp-foundation-e5ece.appspot.com",
+            messagingSenderId: "501646281843",
+            appId: "1:501646281843:web:6fe9ecff026df0c671ee06"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let startups = [];
+        let adminsAndMentors = [];
+        const growthPoints = [
+            "Startup Idea Validation, Market surveys",
+            "Business Model Canvas",
+            "Legal compliances and Secretarial Services",
+            "PoC, Prototyping, testing and MVP Development",
+            "Government grants and Angel funding",
+            "Marketing Planning",
+            "Product and service development",
+            "Go to Market -Strategy development and Implementation",
+            "Branding and Promotion",
+            "Funding and Investment",
+            "Systems and structures development",
+            "Scaling Up"
+        ];
+        const levels = [
+            "Ideation Stage",
+            "PoC/Prototype",
+            "Business Plan/Model",
+            "Pitch Ready",
+            "Team Building",
+            "Funding/Investment Stage"
+        ];
+
+        const mainSection = document.getElementById("mainSection");
+
+        // Load admins and mentors
+        async function loadAdminsAndMentors() {
+            try {
+                const collectionRef = collection(db, 'adminsAndMentors');
+                const snapshot = await getDocs(collectionRef);
+                adminsAndMentors = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderAdminsAndMentors();
+            } catch (error) {
+                console.error("Error loading admins and mentors: ", error);
+            }
+        }
+
+        // Render admins and mentors
+        function renderAdminsAndMentors() {
+            mainSection.innerHTML = `
+                <h2>Admins and Mentors</h2>
+                <ul class="mentor-list">
+                    ${adminsAndMentors.map(
+                        person => `
+                        <li>
+                            <p><strong>Name:</strong> ${person.name}</p>
+                            <button class="details-btn" data-id="${person.id}">Details</button>
+                            <button class="remove-btn" data-id="${person.id}">Remove</button>
+                        </li>`).join("")}
+                </ul>
+                <button id="addMentorBtn">Add Mentor</button>
+            `;
+
+            document.querySelectorAll(".remove-btn").forEach(button => {
+                button.addEventListener("click", event => {
+                    const personId = event.target.getAttribute("data-id");
+                    removeAdminOrMentor(personId);
+                });
+            });
+
+            document.querySelectorAll(".details-btn").forEach(button => {
+                button.addEventListener("click", event => {
+                    const personId = event.target.getAttribute("data-id");
+                    viewAdminMentorDetails(personId);
+                });
+            });
+
+            document.getElementById("addMentorBtn").addEventListener("click", renderAddMentorForm);
+        }
+        
+                // View details of an admin or mentor
+                function viewAdminMentorDetails(personId) {
+            const person = adminsAndMentors.find(p => p.id === personId);
+            if (person) {
+                const acceptedTasks = person.accepted || [];
+                const completedTasks = person.completed || [];
+
+                const acceptedNames = acceptedTasks.map(taskId => {
+                    const startup = startups.find(s => s.id === taskId);
+                    return startup ? startup.organizationName : "Unknown";
+                });
+
+                const completedNames = completedTasks.map(taskId => {
+                    const startup = startups.find(s => s.id === taskId);
+                    return startup ? startup.organizationName : "Unknown";
+                });
+
+                mainSection.innerHTML = `
+                    <h2>${person.name}'s Details</h2>
+                    <p><strong>Phone:</strong> ${person.phone || "N/A"}</p><br>
+                    <p><strong>Email:</strong> ${person.email || "N/A"}</p><br>
+                    <p><strong>Role:</strong> ${person.role || "N/A"}</p><br>
+                    <h3>Accepted Tasks</h3>
+                    <ul>
+                        ${acceptedNames.map(name => `<li>${name}</li>`).join("")}
+                    </ul>
+                    <h3>Completed Tasks</h3>
+                    <ul>
+                        ${completedNames.map(name => `<li>${name}</li>`).join("")}
+                    </ul>
+                    <button id="back-btn">Back</button>
+                `;
+
+                document.getElementById("back-btn").addEventListener("click", renderAdminsAndMentors);
+            }
+        }
+
+        async function removeAdminOrMentor(id) {
+            try {
+                await deleteDoc(doc(db, 'adminsAndMentors', id));
+                adminsAndMentors = adminsAndMentors.filter(person => person.id !== id);
+                renderAdminsAndMentors();
+                alert("Person removed successfully!");
+            } catch (error) {
+                console.error("Error removing person: ", error);
+            }
+        }
+
+        function renderAddMentorForm() {
+            mainSection.innerHTML = `
+                <h2>Add Admin or Mentor</h2>
+                <form id="addMentorForm">
+                    <label>Name: <input type="text" name="name" id="personName" required></label><br>
+                    <label>Phone: <input type="text" name="phone" id="personPhone" maxlength="10" required></label><br>
+                    <label>Email: <input type="email" name="email" id="personEmail" required></label><br>
+                    <label>Role: <input type="text" name="role" id="personRole" required></label><br>
+                    <button type="submit">Add Person</button>
+                </form>
+                <button id="backBtn">Back</button>
+            `;
+
+            document.getElementById("addMentorForm").addEventListener("submit", async (event) => {
+                event.preventDefault();
+
+                const name = document.getElementById("personName").value.trim();
+                const phone = document.getElementById("personPhone").value.trim();
+                const email = document.getElementById("personEmail").value.trim();
+                const role = document.getElementById("personRole").value.trim();
+
+                // Generate automatic password
+                const autoPassword = name.substring(0, 3).toLowerCase() + phone.substring(0, 5);
+
+                try {
+                    // Create user in Firebase Authentication
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, autoPassword);
+
+                    // Add person details to Firestore
+                    const personId = userCredential.user.uid;
+                    await setDoc(doc(db, "adminsAndMentors", personId), {
+                        name,
+                        phone,
+                        email,
+                        role,
+                        accepted: [],
+                        password: autoPassword // Store the password if necessary
+                    });
+
+                    alert(`Person added successfully! Auto-generated password: ${autoPassword}`);
+                    loadAdminsAndMentors(); // Reload list
+                } catch (error) {
+                    console.error("Error adding person: ", error);
+                    alert("Error adding person: " + error.message);
+                }
+            });
+
+            document.getElementById("backBtn").addEventListener("click", renderAdminsAndMentors);
+        }
+
+        // Load startups
+        async function loadStartups() {
+            try {
+                const startupsCollection = collection(db, 'startups');
+                const snapshot = await getDocs(startupsCollection);
+                startups = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderStartups();
+            } catch (error) {
+                console.error("Error loading startups: ", error);
+            }
+        }
+
+        function renderStartups(filterLevel = null) {
+    // Filter startups by selected level if a filter is applied
+    const filteredStartups = filterLevel !== null 
+        ? startups.filter(startup => startup.level === filterLevel)
+        : startups;
+
+    mainSection.innerHTML = `
+        <h2>Startups</h2>
+        <label for="filterLevel">Filter by Level:</label>
+        <select id="filterLevel">
+            <option value="">All Levels</option>
+            ${levels.map((level, index) => `
+                <option value="${index}" ${filterLevel === index ? "selected" : ""}>${level}</option>
+            `).join("")}
+        </select><br><br>
+        <ul class="startup-list">
+            ${filteredStartups.map(
+                startup => `
+                <li>
+                    <strong>${startup.organizationName}</strong> - Level: ${levels[startup.level || 0]}
+                    <button class="view-btn" data-id="${startup.id}">View</button>
+                    <button class="assign-level-btn" data-id="${startup.id}">Assign Level</button>
+                </li>`
+            ).join("")}
+        </ul>
+    `;
+
+    // Event listener for level filter
+    document.getElementById("filterLevel").addEventListener("change", event => {
+        const selectedLevel = event.target.value === "" ? null : parseInt(event.target.value);
+        renderStartups(selectedLevel);
+    });
+
+    document.querySelectorAll(".view-btn").forEach(button => {
+        button.addEventListener("click", event => {
+            const startupId = event.target.getAttribute("data-id");
+            viewStartupDetails(startupId);
+        });
+    });
+
+    document.querySelectorAll(".assign-level-btn").forEach(button => {
+        button.addEventListener("click", event => {
+            const startupId = event.target.getAttribute("data-id");
+            renderAssignLevelForm(startupId);
+        });
+    });
+}
+
+
+        function viewStartupDetails(id) {
+            const startup = startups.find((s) => s.id === id);
+            if (startup) {
+                mainSection.innerHTML = `
+                    <h2>${startup.organizationName}</h2>
+                    <h3>Profile</h3>
+                    <p><strong>Owner:</strong> ${startup.ownerName}</p><br>
+                    <p><strong>Phone:</strong> ${startup.phoneNumber}</p><br>
+                    <p><strong>Email:</strong> ${startup.email}</p><br>
+                    <p><strong>Registration Date:</strong> ${startup.registrationDate}</p><br>
+                    <p><strong>Level:</strong> ${levels[startup.level || 0]}</p><br>
+                    <p><strong>Documents:</strong> <a href="${startup.driveLink}" target="blank">${startup.driveLink || "No documents uploaded"}</a></p><br>
+                    <h3>Growth</h3>
+                    <form id="growthForm">
+                        ${growthPoints.map((point, index) => `
+                            <label>
+                                ${point}: <input type="number" min="0" max="10" name="growth-${index}" value="${startup.growth?.[index] || 0}">
+                            </label><br><br>
+                        `).join("")}
+                        <button type="submit">Update Growth</button><br><br>
+                    </form>
+                    <button id="back-btn">Back</button>
+                `;
+
+                document.getElementById("back-btn").addEventListener("click", renderStartups);
+                document.getElementById("growthForm").addEventListener("submit", (event) => {
+                    event.preventDefault();
+                    updateGrowthData(id, new FormData(event.target));
+                });
+            }
+        }
+
+        function renderAssignLevelForm(startupId) {
+            const startup = startups.find(s => s.id === startupId);
+            if (startup) {
+                mainSection.innerHTML = `
+                    <h2>Assign Level to ${startup.organizationName}</h2>
+                    <form id="assignLevelForm">
+                        <label for="levelSelect">Select Level:</label>
+                        <select id="levelSelect">
+                            ${levels.map((level, index) => `
+                                <option value="${index}" ${startup.level === index ? "selected" : ""}>${level}</option>
+                            `).join("")}
+                        </select><br><br>
+                        <button type="submit">Update Level</button><br><br>
+                    </form>
+                    <button id="back-btn">Back</button>
+                `;
+
+                document.getElementById("assignLevelForm").addEventListener("submit", event => {
+                    event.preventDefault();
+                    const selectedLevel = parseInt(document.getElementById("levelSelect").value);
+                    updateStartupLevel(startupId, selectedLevel);
+                });
+
+                document.getElementById("back-btn").addEventListener("click", renderStartups);
+            }
+        }
+
+        async function updateStartupLevel(startupId, level) {
+            try {
+                const startupRef = doc(db, 'startups', startupId);
+                await updateDoc(startupRef, { level });
+                alert("Level updated successfully!");
+                loadStartups();
+            } catch (error) {
+                console.error("Error updating startup level: ", error);
+                alert("Failed to update level.");
+            }
+        }
+
+        async function updateGrowthData(id, formData) {
+            try {
+                const growthData = growthPoints.map((_, index) => parseFloat(formData.get(`growth-${index}`)) || 0);
+                const startupRef = doc(db, 'startups', id);
+                await updateDoc(startupRef, { growth: growthData });
+                alert("Growth data updated successfully!");
+                renderStartups();
+            } catch (error) {
+                console.error("Error updating growth data: ", error);
+                alert("Failed to update growth data.");
+            }
+        }
+
+        // Switch event listeners
+        document.getElementById("mentorsSwitch").addEventListener("click", loadAdminsAndMentors);
+        document.getElementById("startupsSwitch").addEventListener("click", loadStartups);
+
+        // Initial load
+        loadStartups();
+    </script>
+</head>
+<body>
+    <nav>
+        <h1>ERP - Admin Dashboard</h1>
+    </nav>
+    <div class="switches-container">
+        <button id="mentorsSwitch">Admins and Mentors</button>
+        <button id="startupsSwitch">Startups</button>
+    </div>
+    <div class="main-section" id="mainSection">
+        <!-- Dynamic content will be rendered here -->
+    </div>
+</body>
+</html>

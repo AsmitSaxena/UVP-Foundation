@@ -27,6 +27,27 @@ nav {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+
+#logoutBtn {
+    background-color: #dc2626; /* Red color for logout */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-weight: bold;
+}
+
+#logoutBtn:hover {
+    background-color: #b91c1c; /* Darker red on hover */
+}
+
+#logoutBtn:active {
+    background-color: #7f1d1d; /* Even darker when clicked */
+}
+
 /* Switches Container */
 .switches-container {
     margin: 20px 0;
@@ -101,6 +122,21 @@ nav {
 }
 
 .view-button:hover {
+    background-color: #003399;
+}
+
+.main-section button {
+    padding: 5px 10px;
+    font-size: 14px;
+    border: none;
+    background-color: #0052cc;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.main-section button:hover {
     background-color: #003399;
 }
 

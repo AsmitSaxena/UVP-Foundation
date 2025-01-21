@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ERP - Admin Dashboard</title>
-    <link rel="stylesheet" href="admin_dashboard.css">
+    <link rel="stylesheet" href="erp.css">
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getFirestore, collection, getDocs, doc, updateDoc, addDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-        import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCH2BYhLITb-RrzosdVmJfl7H1TUyqG_To",
@@ -338,6 +338,17 @@
             }
         }
 
+                document.getElementById("logoutBtn").addEventListener("click", async () => {
+            try {
+                await signOut(auth);
+                alert("Logged out successfully!");
+                window.location.href = "login.html"; // Redirect to login page after logout
+            } catch (error) {
+                console.error("Logout failed: ", error);
+                alert("Failed to log out. Please try again.");
+            }
+        });
+
         // Switch event listeners
         document.getElementById("mentorsSwitch").addEventListener("click", loadAdminsAndMentors);
         document.getElementById("startupsSwitch").addEventListener("click", loadStartups);
@@ -349,6 +360,7 @@
 <body>
     <nav>
         <h1>ERP - Admin Dashboard</h1>
+        <button id="logoutBtn">Logout</button>
     </nav>
     <div class="switches-container">
         <button id="mentorsSwitch">Admins and Mentors</button>

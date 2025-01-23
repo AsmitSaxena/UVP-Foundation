@@ -66,6 +66,10 @@
     margin-top: 1rem;
 }
 
+.contact-info a {
+    color: rgb(218, 222, 160);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .footer {

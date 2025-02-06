@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERP - Startup Dashboard</title>
+    <link rel="stylesheet" href="erp.css">
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged ,signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCH2BYhLITb-RrzosdVmJfl7H1TUyqG_To",
+            authDomain: "uvp-foundation-e5ece.firebaseapp.com",
+            projectId: "uvp-foundation-e5ece",
+            storageBucket: "uvp-foundation-e5ece.appspot.com",
+            messagingSenderId: "501646281843",
+            appId: "1:501646281843:web:6fe9ecff026df0c671ee06"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth();
+
+        let currentStartupId = null; // Initialize as null
+        const mainSection = document.getElementById("mainSection");
+
+        // Fetch the startup ID dynamically based on the logged-in user's email
+        async function fetchCurrentStartupId(userEmail) {
+            try {
+                const startupsCollection = collection(db, "startups");
+                const snapshot = await getDocs(startupsCollection);
+
+                for (const docSnapshot of snapshot.docs) {
+                    const startupData = docSnapshot.data();
+                    if (startupData.email === userEmail) {
+                        currentStartupId = docSnapshot.id;
+                        return;
+                    }
+                }
+
+                throw new Error("No matching startup found for the logged-in user.");
+            } catch (error) {
+                console.error("Error fetching current startup ID:", error);
+                mainSection.innerHTML = `<p>Error loading startup ID: ${error.message}</p>`;
+            }
+        }
+
+        async function fetchStartupData() {
+            try {
+                if (!currentStartupId) {
+                    throw new Error("Startup ID not found. Please log in.");
+                }
+
+                const startupRef = doc(db, "startups", currentStartupId);
+                const startupSnap = await getDoc(startupRef);
+
+                if (startupSnap.exists()) {
+                    return startupSnap.data();
+                } else {
+                    throw new Error("Startup data not found.");
+                }
+            } catch (error) {
+                console.error("Error fetching startup data:", error);
+                mainSection.innerHTML = `<p>Error loading data: ${error.message}</p>`;
+                return null;
+            }
+        }
+
+        function renderProfileAndDocuments(startup) {
+            mainSection.innerHTML = `
+                <h1 style = " text-align:center">Welcome, ${startup.ownerName}!</h1><br><br>
+                <div>
+                    <h2>Profile Details</h2><br>
+                    <p><strong>Owner:</strong> ${startup.ownerName}</p>
+                    <p><strong>Organization:</strong> ${startup.organizationName}</p>
+                    <p><strong>Phone:</strong> ${startup.phoneNumber}</p>
+                    <p><strong>Email:</strong> ${startup.email}</p>
+                    <p><strong>Status:</strong> ${startup.status}</p>
+                    <p><strong>Registration Date:</strong> ${startup.registrationDate}</p>
+                    <p><strong>LEVEL:</strong> ${startup.level}</p>
+                </div>
+                <div>
+                    <h2>Legal Documents</h2><br>
+                    <p>
+                        
+                        <a href="${startup.driveLink}" target="_blank">${startup.driveLink || "No link available"}</a>
+                    </p><br>
+                    <input type="text" id="driveLinkInput" placeholder="Enter new drive link" style = "padding: 10px; font-size: 14px; border: 1px solid #ccc; border-radius: 5px;" > <br><br>
+                    <button id="saveDriveLink" class = "upload-button">Save Link</button>
+                </div>
+            `;
+
+            document.getElementById("saveDriveLink").addEventListener("click", updateDriveLink);
+        }
+
+        async function updateDriveLink() {
+            const newLink = document.getElementById("driveLinkInput").value.trim();
+
+            if (!newLink) {
+                alert("Drive link cannot be empty.");
+                return;
+            }
+
+            try {
+                if (!currentStartupId) {
+                    throw new Error("Startup ID not found. Please log in.");
+                }
+
+                const startupRef = doc(db, "startups", currentStartupId);
+                await updateDoc(startupRef, { driveLink: newLink });
+
+                alert("Drive link updated successfully!");
+                initializeProfileAndDocuments(); // Re-render the section
+            } catch (error) {
+                console.error("Error updating drive link:", error);
+                alert("Failed to update drive link. Please try again.");
+            }
+        }
+
+        async function renderGrowth() {
+            const startupData = await fetchStartupData();
+
+            if (startupData) {
+                const growthPoints = [
+                    "Startup Idea Validation, Market surveys",
+                    "Business Model Canvas",
+                    "Legal compliances and Secretarial Services",
+                    "PoC, Prototyping, testing and MVP Development",
+                    "Government grants and Angel funding",
+                    "Marketing Planning",
+                    "Product and service development",
+                    "Go to Market -Strategy development and Implementation",
+                    "Branding and Promotion",
+                    "Funding and Investment",
+                    "Systems and structures development",
+                    "Scaling Up"
+                ];
+
+                mainSection.innerHTML = `
+                    <h2>Growth</h2>
+                    <ul>
+                        ${
+                            startupData.growth?.length
+                                ? startupData.growth.map(
+                                      (value, index) => `<li>${growthPoints[index]}: <strong>${value}</strong></li>`
+                                  ).join("")
+                                : "<li>No growth data available.</li>"
+                        }
+                    </ul>
+                `;
+            }
+        }
+
+        async function initializeProfileAndDocuments() {
+            const startupData = await fetchStartupData();
+            if (startupData) renderProfileAndDocuments(startupData);
+        }
+
+        // Authenticate and load data
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                await fetchCurrentStartupId(user.email);
+                initializeProfileAndDocuments();
+            } else {
+                mainSection.innerHTML = `<p>Please log in to view your startup details.</p>`;
+            }
+        });
+
+        document.getElementById("logoutBtn").addEventListener("click", async () => {
+            try {
+                await signOut(auth);
+                alert("Logged out successfully!");
+                window.location.href = "login.html"; // Redirect to login page after logout
+            } catch (error) {
+                console.error("Logout failed: ", error);
+                alert("Failed to log out. Please try again.");
+            }
+        });
+
+        document.getElementById("profileSwitch").addEventListener("click", initializeProfileAndDocuments);
+        document.getElementById("growthSwitch").addEventListener("click", renderGrowth);
+
+    </script>
+</head>
+<body>
+    <nav>
+        <h1>ERP - Startup Dashboard</h1>
+        <button id="logoutBtn">Logout</button>
+    </nav>
+    <div class="switches-container">
+        <button id="profileSwitch">Profile & Documents</button>
+        <button id="growthSwitch">Growth</button>
+    </div>
+    <div class="main-section" id="mainSection">
+        <!-- Dynamic content will be rendered here -->
+    </div>
+</body>
+</html>

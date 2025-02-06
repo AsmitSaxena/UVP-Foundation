@@ -1,0 +1,242 @@
+/* General Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #e6f0ff; /* Light blue background */
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+/* Navigation Bar */
+nav {
+    width: 100%;
+    background: #5390bf; /* Deep blue */
+    color: white;
+    padding: 15px 20px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+
+#logoutBtn {
+    background-color: #dc2626; /* Red color for logout */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-weight: bold;
+}
+
+#logoutBtn:hover {
+    background-color: #b91c1c; /* Darker red on hover */
+}
+
+#logoutBtn:active {
+    background-color: #7f1d1d; /* Even darker when clicked */
+}
+
+/* Switches Container */
+.switches-container {
+    margin: 20px 0;
+    display: flex;
+    gap: 10px;
+}
+
+.switches-container button {
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    background: #5390bf;
+    color: rgb(0, 0, 0);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.switches-container button:hover {
+    background-color: #5390bf;
+    color: white;
+}
+
+.container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+}
+
+/* Card Styling */
+.card {
+    padding: 20px;
+    width: calc(100% / 5 - 20px);
+    box-sizing: border-box;
+    text-align: center;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 2px solid #5390bf;
+}
+
+.card h4 {
+    font-size: 1.2em;
+    margin: 0;
+}
+
+.card h6 {
+    font-size: 1em;
+    margin: 0;
+}
+
+.card p {
+    margin: 10px 0;
+}
+
+.card button {
+    margin: 5px;
+}
+
+@media (max-width: 1200px) {
+    .card {
+        width: calc(100% / 3 - 20px);
+    }
+}
+@media (max-width: 768px) {
+    .card {
+        width: calc(100% / 2 - 20px);
+    }
+}
+@media (max-width: 480px) {
+    .card {
+        width: 100%;
+    }
+}
+/* Main Section */
+.main-section {
+    width: 100%;
+    max-width: 90%;
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 2px solid #5390bf;
+}
+
+.main-section h2 {
+    margin-bottom: 20px;
+    text-align: center;
+    color: #5390bf;
+}
+
+/*.main-section h3 {
+    color: #5390bf;
+    margin-bottom: 10px;
+}*/
+
+.main-section p {
+    margin-bottom: 10px;
+}
+
+.main-section ul {
+    list-style: none;
+    padding: 0;
+}
+
+.main-section li {
+    margin: 10px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.view-button {
+    padding: 5px 10px;
+    font-size: 14px;
+    border: none;
+    background: #5390bf;
+    color: rgb(0, 0, 0);
+    border-radius: 5px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.view-button:hover {
+    background-color: #5390bf;
+    color: white;
+}
+
+.main-section button {
+    padding: 5px 10px;
+    font-size: 14px;
+    border: none;
+    background:#5390bf;
+    color: rgb(0, 0, 0);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.main-section button:hover {
+    background-color: #5390bf;
+    color: white;
+}
+
+/* Button for Uploading Documents */
+.upload-button {
+    padding: 10px 15px;
+    font-size: 14px;
+    border: none;
+    background-color: #5390bf;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 10px;
+}
+
+.upload-button:hover {
+    background-color: #5390bf;
+    color: white;
+}
+
+/* File Input Styling */
+input[type="file"] {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.progress-container {
+    width: 100%;
+    background-color: #939393;
+    border-radius: 25px;
+    overflow: hidden;
+}
+.progress-bar {
+    height: 30px;
+    width: 0;
+    text-align: center;
+    line-height: 30px;
+    color: rgb(255, 255, 255);
+    border-radius: 25px;
+}
+.red { background-color: rgb(255, 0, 0); }
+.orange { background-color: orange; }
+.green { background-color: green; }
+
+.lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center;}
+.lightbox-content { background: white; padding: 20px; }
+.content-box { border: 1px solid #ccc; padding: 10px; min-height: 150px; }
+

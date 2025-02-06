@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERP - Admin Dashboard</title>
+    <link rel="stylesheet" href="erp.css">
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, addDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getAuth, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCH2BYhLITb-RrzosdVmJfl7H1TUyqG_To",
+            authDomain: "uvp-foundation-e5ece.firebaseapp.com",
+            projectId: "uvp-foundation-e5ece",
+            storageBucket: "uvp-foundation-e5ece.appspot.com",
+            messagingSenderId: "501646281843",
+            appId: "1:501646281843:web:6fe9ecff026df0c671ee06"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let startups = [];
+        let adminsAndMentors = [];
+        const growthPoints = [
+            "Startup Idea Validation, Market surveys",
+            "Business Model Canvas",
+            "Legal compliances and Secretarial Services",
+            "PoC, Prototyping, testing and MVP Development",
+            "Government grants and Angel funding",
+            "Marketing Planning",
+            "Product and service development",
+            "Go to Market -Strategy development and Implementation",
+            "Branding and Promotion",
+            "Funding and Investment",
+            "Systems and structures development",
+            "Scaling Up"
+        ];
+        const levels = [
+            "Ideation Stage",
+            "PoC/Prototype",
+            "Business Plan/Model",
+            "Pitch Ready",
+            "Team Building",
+            "Funding/Investment Stage"
+        ];
+
+        const mainSection = document.getElementById("mainSection");
+
+        // Load admins and mentors
+        async function loadAdminsAndMentors() {
+            try {
+                const collectionRef = collection(db, 'adminsAndMentors');
+                const snapshot = await getDocs(collectionRef);
+                adminsAndMentors = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderAdminsAndMentors();
+            } catch (error) {
+                console.error("Error loading admins and mentors: ", error);
+            }
+        }
+
+        // Render admins and mentors
+        function renderAdminsAndMentors() {
+            mainSection.innerHTML = `
+                <h2>Admins and Mentors</h2>
+                <div class = "container">
+                    ${adminsAndMentors.map(
+                        person => `
+                        <div class="card">
+                            <h4> ${person.name}</h4>
+                            <p> ${person.designation}</p>
+                            <button class="details-btn" data-id="${person.id}">Details</button>
+                            <button class="remove-btn" data-id="${person.id}">Remove</button>
+                        </div>`).join("")}
+                </div><br><br>
+                <button id="addMentorBtn">Add Mentor</button>
+            `;
+
+            document.querySelectorAll(".remove-btn").forEach(button => {
+                button.addEventListener("click", event => {
+                    const personId = event.target.getAttribute("data-id");
+                    removeAdminOrMentor(personId);
+                });
+            });
+
+            document.querySelectorAll(".details-btn").forEach(button => {
+                button.addEventListener("click", event => {
+                    const personId = event.target.getAttribute("data-id");
+                    viewAdminMentorDetails(personId);
+                });
+            });
+
+            document.getElementById("addMentorBtn").addEventListener("click", renderAddMentorForm);
+        }
+        
+                // View details of an admin or mentor
+                function viewAdminMentorDetails(personId) {
+            const person = adminsAndMentors.find(p => p.id === personId);
+            if (person) {
+                const acceptedTasks = person.accepted || [];
+                const completedTasks = person.completed || [];
+
+                const acceptedNames = acceptedTasks.map(taskId => {
+                    const startup = startups.find(s => s.id === taskId);
+                    return startup ? startup.organizationName : "Unknown";
+                });
+
+                const completedNames = completedTasks.map(taskId => {
+                    const startup = startups.find(s => s.id === taskId);
+                    return startup ? startup.organizationName : "Unknown";
+                });
+
+                mainSection.innerHTML = `
+                    <h2>${person.name}'s Details</h2>
+                    <p><strong>Phone:</strong> ${person.phone || "N/A"}</p><br>
+                    <p><strong>Email:</strong> ${person.email || "N/A"}</p><br>
+                    <p><strong>Designation:</strong> ${person.designation || "N/A"}</p><br>
+                    <p><strong>Role:</strong> ${person.role || "N/A"}</p><br>
+                    <h3>Accepted Tasks</h3>
+                    <ul>
+                        ${acceptedNames.map(name => `<li>${name}</li>`).join("")}
+                    </ul>
+                    <h3>Completed Tasks</h3>
+                    <ul>
+                        ${completedNames.map(name => `<li>${name}</li>`).join("")}
+                    </ul>
+                    <button id="back-btn">Back</button>
+                `;
+
+                document.getElementById("back-btn").addEventListener("click", renderAdminsAndMentors);
+            }
+        }
+
+        async function removeAdminOrMentor(id) {
+            try {
+                await deleteDoc(doc(db, 'adminsAndMentors', id));
+                adminsAndMentors = adminsAndMentors.filter(person => person.id !== id);
+                renderAdminsAndMentors();
+                alert("Person removed successfully!");
+            } catch (error) {
+                console.error("Error removing person: ", error);
+            }
+        }
+
+        function renderAddMentorForm() {
+            mainSection.innerHTML = `
+                <h2>Add Admin or Mentor</h2>
+                <form id="addMentorForm">
+                    <label>Name: <input type="text" name="name" id="personName" required></label><br><br>
+                    <label>Phone: <input type="text" name="phone" id="personPhone" maxlength="10" required></label><br><br>
+                    <label>Email: <input type="email" name="email" id="personEmail" required></label><br><br>
+                    <label>Designation: <input type="text" name="designation" id="designation" required></label><br><br>
+                    <label>Role: <input type="text" name="role" id="personRole" required></label><br><br>
+                    <button type="submit">Add Person</button><br><br>
+                </form>
+                <button id="backBtn">Back</button>
+            `;
+
+            document.getElementById("addMentorForm").addEventListener("submit", async (event) => {
+                event.preventDefault();
+
+                const name = document.getElementById("personName").value.trim();
+                const phone = document.getElementById("personPhone").value.trim();
+                const email = document.getElementById("personEmail").value.trim();
+                const designation = document.getElementById("designation").value.trim();
+                const role = document.getElementById("personRole").value.trim();
+
+                // Generate automatic password
+                const autoPassword = name.substring(0, 3).toLowerCase() + phone.substring(0, 5);
+
+                try {
+                    // Create user in Firebase Authentication
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, autoPassword);
+
+                    // Add person details to Firestore
+                    const personId = userCredential.user.uid;
+                    await setDoc(doc(db, "adminsAndMentors", personId), {
+                        name,
+                        phone,
+                        email,
+                        designation,
+                        role,
+                        accepted: [],
+                        password: autoPassword // Store the password if necessary
+                    });
+
+                    alert(`Person added successfully! Auto-generated password: ${autoPassword}`);
+                    loadAdminsAndMentors(); // Reload list
+                } catch (error) {
+                    console.error("Error adding person: ", error);
+                    alert("Error adding person: " + error.message);
+                }
+            });
+
+            document.getElementById("backBtn").addEventListener("click", renderAdminsAndMentors);
+        }
+
+        // Load startups
+        async function loadStartups() {
+            try {
+                const startupsCollection = collection(db, 'startups');
+                const snapshot = await getDocs(startupsCollection);
+                startups = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderStartups();
+            } catch (error) {
+                console.error("Error loading startups: ", error);
+            }
+        }
+
+        function renderStartups(filterLevel = null) {
+    // Filter startups by selected level if a filter is applied
+    const filteredStartups = filterLevel !== null 
+        ? startups.filter(startup => startup.level === filterLevel)
+        : startups;
+
+    mainSection.innerHTML = `
+        <h2>Startups</h2>
+        <label for="filterLevel">Filter by Level:</label>
+        <select id="filterLevel">
+            <option value="">All Levels</option>
+            ${levels.map((level, index) => `
+                <option value="${index}" ${filterLevel === index ? "selected" : ""}>${level}</option>
+            `).join("")}
+        </select><br><br>
+        <ul class="container">
+            ${filteredStartups.map(
+                startup => `
+                <div class="card">
+                    <h4>${startup.organizationName}</h4> 
+                    <p>Level: ${levels[startup.level || 0]}</p>
+                    <button class="view-btn" data-id="${startup.id}">View</button>
+                    <button class="assign-level-btn" data-id="${startup.id}">Assign Level</button>
+                </div>`
+            ).join("")}
+        </ul>
+    `;
+
+    // Event listener for level filter
+    document.getElementById("filterLevel").addEventListener("change", event => {
+        const selectedLevel = event.target.value === "" ? null : parseInt(event.target.value);
+        renderStartups(selectedLevel);
+    });
+
+    document.querySelectorAll(".view-btn").forEach(button => {
+        button.addEventListener("click", event => {
+            const startupId = event.target.getAttribute("data-id");
+            viewStartupDetails(startupId);
+        });
+    });
+
+    document.querySelectorAll(".assign-level-btn").forEach(button => {
+        button.addEventListener("click", event => {
+            const startupId = event.target.getAttribute("data-id");
+            renderAssignLevelForm(startupId);
+        });
+    });
+}
+
+
+        function viewStartupDetails(id) {
+            const startup = startups.find((s) => s.id === id);
+            if (startup) {
+                mainSection.innerHTML = `
+                    <h2>${startup.organizationName}</h2>
+                    <h3>Profile</h3><br>
+                    <p><strong>Owner:</strong> ${startup.ownerName}</p><br>
+                    <p><strong>Phone:</strong> ${startup.phoneNumber}</p><br>
+                    <p><strong>Email:</strong> ${startup.email}</p><br>
+                    <p><strong>Registration Date:</strong> ${startup.registrationDate}</p><br>
+                    <p><strong>Level:</strong> ${levels[startup.level || 0]}</p><br>
+                    <p><strong>Documents:</strong> <a href="${startup.driveLink}" target="blank">${startup.driveLink || "No documents uploaded"}</a></p><br>
+                    <h3>Growth</h3><br>
+                    <form id="growthForm">
+                        ${growthPoints.map((point, index) => `
+                            <label>
+                                ${point}: <input type="number" min="0" max="10" name="growth-${index}" value="${startup.growth?.[index] || 0}">
+                            </label><br><br>
+                        `).join("")}
+                        <button type="submit">Update Growth</button><br><br>
+                    </form>
+                    <button id="back-btn">Back</button>
+                `;
+
+                document.getElementById("back-btn").addEventListener("click", renderStartups);
+                document.getElementById("growthForm").addEventListener("submit", (event) => {
+                    event.preventDefault();
+                    updateGrowthData(id, new FormData(event.target));
+                });
+            }
+        }
+
+        function renderAssignLevelForm(startupId) {
+            const startup = startups.find(s => s.id === startupId);
+            if (startup) {
+                mainSection.innerHTML = `
+                    <h2>Assign Level to ${startup.organizationName}</h2>
+                    <form id="assignLevelForm">
+                        <label for="levelSelect">Select Level:</label>
+                        <select id="levelSelect">
+                            ${levels.map((level, index) => `
+                                <option value="${index}" ${startup.level === index ? "selected" : ""}>${level}</option>
+                            `).join("")}
+                        </select><br><br>
+                        <button type="submit">Update Level</button><br><br>
+                    </form>
+                    <button id="back-btn">Back</button>
+                `;
+
+                document.getElementById("assignLevelForm").addEventListener("submit", event => {
+                    event.preventDefault();
+                    const selectedLevel = parseInt(document.getElementById("levelSelect").value);
+                    updateStartupLevel(startupId, selectedLevel);
+                });
+
+                document.getElementById("back-btn").addEventListener("click", renderStartups);
+            }
+        }
+
+        async function updateStartupLevel(startupId, level) {
+            try {
+                const startupRef = doc(db, 'startups', startupId);
+                await updateDoc(startupRef, { level });
+                alert("Level updated successfully!");
+                loadStartups();
+            } catch (error) {
+                console.error("Error updating startup level: ", error);
+                alert("Failed to update level.");
+            }
+        }
+
+        async function updateGrowthData(id, formData) {
+            try {
+                const growthData = growthPoints.map((_, index) => parseFloat(formData.get(`growth-${index}`)) || 0);
+                const startupRef = doc(db, 'startups', id);
+                await updateDoc(startupRef, { growth: growthData });
+                alert("Growth data updated successfully!");
+                renderStartups();
+            } catch (error) {
+                console.error("Error updating growth data: ", error);
+                alert("Failed to update growth data.");
+            }
+        }
+
+        document.getElementById("logoutBtn").addEventListener("click", async () => {
+            try {
+                await signOut(auth);
+                alert("Logged out successfully!");
+                window.location.href = "login.html"; // Redirect to login page after logout
+            } catch (error) {
+                console.error("Logout failed: ", error);
+                alert("Failed to log out. Please try again.");
+            }
+        });
+
+
+        async function loadBlogs() {
+            const blogsCollection = collection(db, 'blogs');
+            const snapshot = await getDocs(blogsCollection);
+            const blogs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderBlogs(blogs);
+        }
+
+        function renderBlogs(blogs) {
+            const mainSection = document.getElementById("mainSection");
+            mainSection.innerHTML = `
+                <h2>Blogs</h2>
+                <button id="addBlogBtn">Add Blog</button><br><br>
+                <div class="container">
+                    ${blogs.map(blog => `
+                        <div class="card">
+                            <h3>${blog.title}</h3>
+                            <p><strong>${blog.subtitle}</strong></p>
+                            <p><em>${blog.date}</em></p>
+                            <button class="view-blog" data-id="${blog.id}">View</button>
+                            <button class="delete-blog" data-id="${blog.id}">Delete</button>
+                        </div>
+                    `).join("")}
+                </div>
+            `;
+
+            document.querySelectorAll(".view-blog").forEach(button => {
+                button.addEventListener("click", event => {
+                    const blogId = event.target.dataset.id;
+                    const blog = blogs.find(b => b.id === blogId);
+                    openLightbox(blog);
+                });
+            });
+
+            document.querySelectorAll(".delete-blog").forEach(button => {
+                button.addEventListener("click", async event => {
+                    const blogId = event.target.dataset.id;
+                    await deleteDoc(doc(db, "blogs", blogId));
+                    loadBlogs();
+                });
+            });
+
+            document.getElementById("addBlogBtn").addEventListener("click", renderAddBlogForm);
+        }
+
+        function openLightbox(blog) {
+            const lightbox = document.createElement("div");
+            lightbox.classList.add("lightbox");
+            lightbox.innerHTML = `
+                <div class="lightbox-content">
+                    <h2>${blog.title}</h2><br>
+                    <h4>${blog.subtitle}</h4><br>
+                    <p><em>${blog.date}</em></p><br>
+                    <p>${blog.content}</p><br>
+                    <button id="closeLightbox" class = "view-button">Close</button>
+                </div>
+            `;
+            document.body.appendChild(lightbox);
+            document.getElementById("closeLightbox").addEventListener("click", () => {
+                document.body.removeChild(lightbox);
+            });
+        }
+
+        function renderAddBlogForm() {
+            document.getElementById("mainSection").innerHTML = `
+                <h2>Add Blog</h2>
+                <form id="blogForm">
+                    <label>Title: <input type="text" id="blogTitle" required></label><br><br>
+                    <label>Subtitle: <input type="text" id="blogSubtitle" required></label><br><br>
+                    <label>Date: <input type="date" id="blogDate" required></label><br><br>
+                    <label>Content:</label><br><br>
+                    <div id="toolbar">
+                        <button type="button" onclick="formatText('bold')">B</button>
+                        <button type="button" onclick="formatText('italic')">I</button>
+                        <button type="button" onclick="formatText('underline')">U</button>
+                        <button type="button" onclick="formatText('strikeThrough')">S</button>
+                        <button type="button" onclick="formatText('justifyLeft')">Left</button>
+                        <button type="button" onclick="formatText('justifyCenter')">Center</button>
+                        <button type="button" onclick="formatText('justifyRight')">Right</button>
+                        <button type="button" onclick="formatText('insertOrderedList')">OL</button>
+                        <button type="button" onclick="formatText('insertUnorderedList')">UL</button>
+                    </div><br>
+                    <div id="blogContent" contenteditable="true" class="content-box"></div><br>
+                    <button type="submit">Add Blog</button>
+                    <button type="button" id="cancelBtn">Cancel</button>
+                </form>
+            `;
+
+            document.getElementById("blogForm").addEventListener("submit", async event => {
+                event.preventDefault();
+                const title = document.getElementById("blogTitle").value;
+                const subtitle = document.getElementById("blogSubtitle").value;
+                const date = document.getElementById("blogDate").value;
+                const content = document.getElementById("blogContent").innerHTML;
+                await addDoc(collection(db, "blogs"), { title, subtitle, date, content });
+                loadBlogs();
+            });
+
+            document.getElementById("cancelBtn").addEventListener("click", loadBlogs);
+        }
+    
+        window.formatText = function(command) {
+            document.execCommand(command, false, null);
+        };
+
+        // Switch event listeners
+        document.getElementById("mentorsSwitch").addEventListener("click", loadAdminsAndMentors);
+        document.getElementById("startupsSwitch").addEventListener("click", loadStartups);
+        document.getElementById("blogsSwitch").addEventListener("click", loadBlogs);
+
+        // Initial load
+        loadStartups();
+    </script>
+</head>
+<body>
+    <nav>
+        <h1>ERP - Admin Dashboard</h1>
+        <button id="logoutBtn">Logout</button>
+    </nav>
+    <div class="switches-container">
+        <button id="mentorsSwitch">Admins and Mentors</button>
+        <button id="startupsSwitch">Startups</button>
+        <button id="blogsSwitch">Blogs</button>        
+    </div>
+    <div class="main-section" id="mainSection">
+        <!-- Dynamic content will be rendered here -->
+    </div>
+</body>
+</html>
